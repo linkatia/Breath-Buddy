@@ -1,0 +1,5 @@
+{
+  "name": "Breath Buddy - 腹式呼吸練習",
+  "description": "一個使用原生 HTML, CSS, 與 JavaScript 打造的單檔案網頁應用程式，旨在引導使用者進行 4-4-4 節奏的腹式呼吸練習，以達到放鬆與專注的效果。",
+  "requestFramePermissions": []
+}
