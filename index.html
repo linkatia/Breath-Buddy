@@ -7,21 +7,25 @@
     <style>
         /* --- CSS 變數與基本設定 --- */
         :root {
-            --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
-            --duration-inhale: 4s;
-            --duration-exhale: 4s;
+            --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
             
             /* 色彩配置 */
-            --color-bg-start: #fde2e4;
-            --color-bg-end: #dceefb;
-            --color-circle-start: #a2d2ff;
-            --color-circle-end: #ffc8dd;
-            --color-text-primary: #575757;
-            --color-text-secondary: #f0f8ff;
+            --color-bg-start: #f4f8ff;
+            --color-bg-end: #e0eafc;
+            --color-circle-start: #89f7fe;
+            --color-circle-end: #66a6ff;
+            --color-text-primary: #3b4a61;
+            --color-text-secondary: #ffffff;
             --color-button-bg: rgba(255, 255, 255, 0.7);
             --color-button-hover-bg: white;
-            --color-shadow: rgba(0, 0, 0, 0.1);
-            --color-focus-ring: #a2d2ff;
+            --color-button-active-bg: #6e8efb;
+            --color-button-active-text: white;
+            --color-shadow: rgba(110, 142, 251, 0.2);
+            --color-focus-ring: #6e8efb;
+
+            /* 圓圈縮放尺寸 */
+            --scale-large: 1.25;
+            --scale-small: 0.85;
         }
 
         /* --- 全域樣式 --- */
@@ -45,33 +49,61 @@
             background: linear-gradient(135deg, var(--color-bg-start), var(--color-bg-end));
             color: var(--color-text-primary);
             text-align: center;
-            padding: 1rem;
+            padding: 1.5rem;
             transition: background 0.5s;
+            overflow: hidden;
         }
 
         /* --- 主要版面與容器 --- */
         .app-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1.5rem;
+            gap: 1.75rem;
         }
         
         /* --- 標題與說明 --- */
         .header h1 {
             font-size: 2.5rem;
             font-weight: 300;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.05em;
+            color: var(--color-text-primary);
         }
         
         .header p {
             font-size: 1rem;
             font-weight: 400;
-            color: var(--color-text-primary);
             opacity: 0.8;
             margin-top: 0.5rem;
+            line-height: 1.5;
+            max-width: 35ch;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* --- 時長選擇器 (Segmented Control) --- */
+        .duration-selector {
+            display: flex;
+            gap: 0.5rem;
+            background-color: var(--color-button-bg);
+            border-radius: 50px;
+            padding: 0.5rem;
+            box-shadow: 0 4px 15px var(--color-shadow);
+            backdrop-filter: blur(10px);
+        }
+        .duration-button {
+            padding: 0.6rem 1.1rem;
+            font-size: 0.9rem;
+            border-radius: 50px;
+            background-color: transparent;
+        }
+        .duration-button.active {
+            background-color: var(--color-button-active-bg);
+            color: var(--color-button-active-text);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(110, 142, 251, 0.4);
         }
 
         /* --- 呼吸引導圈 --- */
@@ -82,6 +114,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-top: 1rem;
         }
 
         .breathing-circle {
@@ -90,31 +123,43 @@
             border-radius: 50%;
             background: linear-gradient(135deg, var(--color-circle-start), var(--color-circle-end));
             box-shadow: 0 10px 30px var(--color-shadow);
-            transform: scale(0.5); /* 初始大小 */
-            transition: transform var(--ease-in-out-quad);
+            transform: scale(var(--scale-small)); /* 初始大小 */
+            transition-property: transform;
+            transition-timing-function: var(--ease-out-quart);
         }
         
-        /* 狀態 class 控制圓圈大小 */
         .breathing-circle.state-inhale,
         .breathing-circle.state-hold {
-            transform: scale(1);
-            transition-duration: var(--duration-inhale);
+            transform: scale(var(--scale-large));
         }
         
-        .breathing-circle.state-exhale {
-            transform: scale(0.5);
-            transition-duration: var(--duration-exhale);
+        .breathing-circle.state-exhale,
+        .breathing-circle.state-pause {
+            transform: scale(var(--scale-small));
         }
 
         .circle-text-content {
             position: absolute;
             color: var(--color-text-secondary);
             z-index: 10;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
 
         .phase-text {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 300;
+        }
+        
+        .phase-text.only-child {
+            font-size: 2rem;
+            font-weight: 400;
         }
         
         .phase-countdown {
@@ -126,7 +171,11 @@
         /* --- 倒數計時 --- */
         .total-countdown-container {
             font-size: 1rem;
-            opacity: 0.7;
+            opacity: 0.9;
+            background: var(--color-button-bg);
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            min-width: 130px;
         }
 
         .total-countdown-container span {
@@ -140,7 +189,7 @@
         }
         
         .control-button {
-            padding: 0.75rem 1.5rem;
+            padding: 0.7rem 1.5rem;
             font-size: 1rem;
             background-color: var(--color-button-bg);
             border: none;
@@ -148,29 +197,38 @@
             cursor: pointer;
             box-shadow: 0 4px 15px var(--color-shadow);
             backdrop-filter: blur(10px);
-            transition: background-color 0.3s, transform 0.2s;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
             color: var(--color-text-primary);
             font-weight: 500;
         }
         
-        .control-button:hover {
+        .control-button:hover:not(:disabled) {
             background-color: var(--color-button-hover-bg);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--color-shadow);
         }
 
         .control-button:focus-visible {
-            outline: 2px solid var(--color-focus-ring);
-            outline-offset: 2px;
+            outline: 3px solid var(--color-focus-ring);
+            outline-offset: 3px;
+        }
+
+        #start-button, #pause-resume-button, #reset-button {
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            font-size: 1.5rem;
+            line-height: 50px;
+            text-align: center;
         }
 
         /* --- 完成畫面 --- */
-        .completion-screen {
+        .completion-container {
             display: flex;
             flex-direction: column;
-            align-items: center;
             gap: 1.5rem;
+            align-items: center;
         }
-        
         .encouragement-message {
             font-size: 1.5rem;
             font-weight: 500;
@@ -178,7 +236,8 @@
             background-image: linear-gradient(135deg, #6e8efb, #a777e3);
             background-clip: text;
             -webkit-background-clip: text;
-            min-height: 2.25rem; /* 避免文字切換時跳動 */
+            min-height: 2.2rem;
+            line-height: 1.4;
         }
         
         /* --- 輔助 & 狀態 --- */
@@ -200,69 +259,86 @@
         }
         
         @media (prefers-reduced-motion: reduce) {
-            .breathing-circle {
-                transition: none;
+            .breathing-circle, .control-button {
+                transition: none !important;
             }
             .control-button:hover {
                 transform: none;
             }
         }
         
-        @media (max-width: 360px) {
+        @media (max-width: 380px) {
+            .app-container {
+                gap: 1.5rem;
+            }
             .header h1 {
                 font-size: 2rem;
+            }
+            .header p {
+                font-size: 0.9rem;
             }
             .breathing-circle-container {
                 width: 180px;
                 height: 180px;
             }
             .phase-text {
-                font-size: 1.5rem;
+                font-size: 1.2rem;
+            }
+            .phase-text.only-child {
+                font-size: 1.8rem;
             }
             .phase-countdown {
                 font-size: 3rem;
             }
         }
-
     </style>
 </head>
 <body>
 
     <main class="app-container">
         
-        <!-- 標題區塊 -->
-        <header class="header">
-            <h1>Breath Buddy</h1>
-            <p>跟隨圓圈，進行 4-4-4 節奏的腹式呼吸練習。</p>
-        </header>
+        <!-- 設定畫面 -->
+        <div id="settings-view">
+            <header class="header">
+                <h1>Breath Buddy</h1>
+                <p>跟隨圓圈進行 4-4-4-1 節奏的腹式呼吸，找回平靜。</p>
+            </header>
+            <div class="duration-selector" role="radiogroup" aria-labelledby="duration-label">
+                <span id="duration-label" class="sr-only">選擇練習總時長</span>
+                <button class="control-button duration-button active" data-duration="60" role="radio" aria-checked="true">60 秒</button>
+                <button class="control-button duration-button" data-duration="90" role="radio" aria-checked="false">90 秒</button>
+                <button class="control-button duration-button" data-duration="120" role="radio" aria-checked="false">120 秒</button>
+            </div>
+            <div class="controls">
+                <button id="start-button" class="control-button" aria-label="開始練習">▶</button>
+            </div>
+        </div>
         
         <!-- 練習主畫面 -->
-        <div id="exercise-view">
-            <!-- 呼吸圓圈與內部文字 -->
+        <div id="exercise-view" class="hidden">
             <div class="breathing-circle-container">
                 <div id="breathing-circle" class="breathing-circle"></div>
                 <div class="circle-text-content">
-                    <p id="phase-text" class="phase-text">準備</p>
-                    <p id="phase-countdown" class="phase-countdown">4</p>
+                    <p id="phase-text" class="phase-text"></p>
+                    <p id="phase-countdown" class="phase-countdown"></p>
                 </div>
             </div>
-            
-            <!-- 總倒數 -->
             <div class="total-countdown-container">
-                總時長: <span id="total-countdown">60</span> 秒
+                剩餘: <span id="total-countdown"></span> 秒
+            </div>
+            <div class="controls">
+                <button id="pause-resume-button" class="control-button" aria-label="暫停練習">⏸</button>
+                <button id="reset-button" class="control-button" aria-label="重置練習，返回主畫面">↺</button>
             </div>
         </div>
         
         <!-- 完成畫面 -->
-        <div id="completion-view" class="completion-screen hidden">
-            <p class="encouragement-message" id="encouragement-message">做得很好！</p>
-            <button id="try-again-button" class="control-button" aria-label="再來一次，重新開始60秒呼吸練習">再來一次</button>
-        </div>
-        
-        <!-- 控制按鈕 -->
-        <div id="controls-view" class="controls">
-            <button id="start-pause-button" class="control-button" aria-label="開始練習">開始</button>
-            <button id="reset-button" class="control-button" aria-label="重置練習">重置</button>
+        <div id="completion-view" class="hidden" class="completion-container">
+             <header class="header">
+                <h1>練習完成</h1>
+            </header>
+            <p class="encouragement-message" id="encouragement-message"></p>
+            <button id="try-again-button" class="control-button" aria-label="再來一次，重新開始相同時長的呼吸練習">再來一次</button>
         </div>
 
         <!-- 螢幕閱讀器專用的即時更新區域 -->
@@ -272,210 +348,227 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-
         // --- DOM 元素 ---
+        const settingsView = document.getElementById('settings-view');
+        const exerciseView = document.getElementById('exercise-view');
+        const completionView = document.getElementById('completion-view');
+        const durationSelector = document.querySelector('.duration-selector');
+        const durationButtons = document.querySelectorAll('.duration-button');
+        const startButton = document.getElementById('start-button');
         const breathingCircle = document.getElementById('breathing-circle');
         const phaseText = document.getElementById('phase-text');
         const phaseCountdown = document.getElementById('phase-countdown');
         const totalCountdown = document.getElementById('total-countdown');
-        const startPauseButton = document.getElementById('start-pause-button');
+        const pauseResumeButton = document.getElementById('pause-resume-button');
         const resetButton = document.getElementById('reset-button');
-        const tryAgainButton = document.getElementById('try-again-button');
-        const exerciseView = document.getElementById('exercise-view');
-        const completionView = document.getElementById('completion-view');
-        const controlsView = document.getElementById('controls-view');
         const encouragementMessage = document.getElementById('encouragement-message');
+        const tryAgainButton = document.getElementById('try-again-button');
         const a11yLiveRegion = document.getElementById('a11y-live-region');
 
         // --- 常數設定 ---
+        const BEAT_MS = 1000; // 每拍 1 秒
+
+        // 狀態機: 定義呼吸的各個階段
         const PHASES = [
-            { name: '吸氣', duration: 4, stateClass: 'state-inhale' },
-            { name: '屏息', duration: 4, stateClass: 'state-hold' },
-            { name: '呼氣', duration: 4, stateClass: 'state-exhale' },
+            { name: '吸氣', duration: 4, stateClass: 'state-inhale', hasCountdown: true, beatMs: BEAT_MS },
+            { name: '屏息', duration: 4, stateClass: 'state-hold', hasCountdown: true, beatMs: BEAT_MS },
+            { name: '呼氣', duration: 4, stateClass: 'state-exhale', hasCountdown: true, beatMs: BEAT_MS },
+            { name: '緩息', duration: 1, stateClass: 'state-pause', hasCountdown: false, beatMs: BEAT_MS },
         ];
-        const TOTAL_EXERCISE_TIME = 60; // 總練習時間（秒）
-        const CYCLE_DURATION = PHASES.reduce((sum, phase) => sum + phase.duration, 0);
 
         const ENCOURAGEMENT_MESSAGES = [
-            "做得很好！", "謝謝你給自己這段時間。", "你的專注很珍貴。", "深呼吸讓你更清晰。", 
-            "你值得這份平靜。", "太棒了，繼續保持。", "今天你已經完成了一件重要的事。", 
+            "做得很好！", "謝謝你給自己這段時間。", "你的專注很珍貴。", "深呼吸讓你更清晰。",
+            "你值得這份平靜。", "太棒了，繼續保持。", "今天你已經完成了一件重要的事。",
             "安靜的力量正在滋養你。", "很好，你正在訓練自己的控制力。", "呼吸帶你回到當下。",
-            "你的努力正在累積。", "做得真好，身心都更放鬆了。", "這一分鐘，你屬於自己。", 
+            "你的努力正在累積。", "做得真好，身心都更放鬆了。", "這一分鐘，你屬於自己。",
             "你正在慢慢變得更穩定。", "平靜正在你的心裡生根。", "太好了，你已經堅持到了最後。",
-            "你的專注令人敬佩。", "這是送給自己的禮物。", "深呼吸，力量就在你心中。", 
-            "每一次練習都讓你更進步。", "你正在好好照顧自己。", "謝謝你給自己這份溫柔。", 
-            "平穩的呼吸讓你更堅定。", "很棒，你完成了一次完整的練習。", "你的耐心是最美的力量。", 
-            "這份寧靜會陪你一整天。", "做得真好，你值得驕傲。", "每一次呼吸都讓你更有能量。", 
+            "你的專注令人敬佩。", "這是送給自己的禮物。", "深呼吸，力量就在你心中。",
+            "每一次練習都讓你更進步。", "你正在好好照顧自己。", "謝謝你給自己這份溫柔。",
+            "平穩的呼吸讓你更堅定。", "很棒，你完成了一次完整的練習。", "你的耐心是最美的力量。",
+            "這份寧靜會陪你一整天。", "做得真好，你值得驕傲。", "每一次呼吸都讓你更有能量。",
             "謝謝自己今天的付出。", "你正在成為更專注、更自在的自己。"
         ];
 
         // --- 狀態變數 ---
-        let appState = 'idle'; // 'idle', 'running', 'paused', 'finished'
-        let mainInterval = null;
-        let totalTimeRemaining = TOTAL_EXERCISE_TIME;
+        let appState = 'settings'; // 'settings', 'running', 'paused', 'finished'
+        let mainTimeout = null;
+        let selectedDuration = 60;
+        let totalTimeRemaining = selectedDuration;
         let currentPhaseIndex = 0;
         let timeInPhase = 0;
-        
-        // --- 核心函式 ---
 
         /**
          * 初始化或重置應用程式狀態與 UI
          */
         function reset() {
-            clearInterval(mainInterval);
-            mainInterval = null;
+            clearTimeout(mainTimeout);
+            mainTimeout = null;
+            appState = 'settings';
             
-            appState = 'idle';
-            totalTimeRemaining = TOTAL_EXERCISE_TIME;
-            currentPhaseIndex = 0;
-            timeInPhase = 0;
-            
-            updateUI();
-            
-            // 切換畫面可見度
-            exerciseView.classList.remove('hidden');
+            settingsView.classList.remove('hidden');
+            exerciseView.classList.add('hidden');
             completionView.classList.add('hidden');
-            controlsView.classList.remove('hidden');
 
-            // 確保圓圈回到初始狀態
-            breathingCircle.className = 'breathing-circle';
-            // 手動觸發一次重排，確保 class 被移除後再添加
-            void breathingCircle.offsetWidth; 
-        }
-
-        /**
-         * 處理開始/暫停/繼續按鈕的點擊事件
-         */
-        function handleStartPause() {
-            if (appState === 'running') {
-                pause();
-            } else {
-                start();
-            }
-        }
-
-        /**
-         * 開始或繼續計時器
-         */
-        function start() {
-            if (appState === 'idle') {
-                // 如果是從頭開始，立即進入第一個階段
-                changePhase(0);
-            }
+            breathingCircle.style.transitionDuration = '1s';
+            breathingCircle.className = 'breathing-circle'; // Reset to default small size
             
-            appState = 'running';
-            startPauseButton.textContent = '暫停';
-            startPauseButton.setAttribute('aria-label', '暫停練習');
-
-            mainInterval = setInterval(tick, 1000);
+            phaseText.textContent = '';
+            phaseCountdown.textContent = '';
+            totalCountdown.textContent = selectedDuration; // Show selected duration on reset
         }
 
         /**
-         * 暫停計時器
+         * 處理時長選擇
+         * @param {Event} e - 點擊事件
          */
-        function pause() {
-            appState = 'paused';
-            clearInterval(mainInterval);
-            startPauseButton.textContent = '繼續';
-            startPauseButton.setAttribute('aria-label', '繼續練習');
-            updateUI(); // 更新 UI 以顯示 "已暫停" 等資訊
+        function handleDurationSelect(e) {
+            const button = e.target.closest('.duration-button');
+            if (!button || appState !== 'settings') return;
+
+            selectedDuration = parseInt(button.dataset.duration, 10);
+            
+            durationButtons.forEach(btn => {
+                const isActive = btn === button;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-checked', isActive);
+            });
+        }
+
+        /**
+         * 開始練習
+         */
+        function startExercise() {
+            if (appState === 'running') return;
+            appState = 'running';
+            totalTimeRemaining = selectedDuration;
+            
+            currentPhaseIndex = -1; // 將從 -1 開始，以便 changePhase() 能正確地從 0 開始
+            timeInPhase = 0;
+
+            settingsView.classList.add('hidden');
+            completionView.classList.add('hidden');
+            exerciseView.classList.remove('hidden');
+            
+            pauseResumeButton.textContent = '⏸';
+            pauseResumeButton.setAttribute('aria-label', '暫停練習');
+            
+            // 立即進入第一個階段並啟動計時器
+            changePhase();
+        }
+
+        /**
+         * 暫停或繼續練習
+         */
+        function handlePauseResume() {
+            if (appState === 'running') {
+                appState = 'paused';
+                clearTimeout(mainTimeout);
+                pauseResumeButton.textContent = '▶';
+                pauseResumeButton.setAttribute('aria-label', '繼續練習');
+                a11yLiveRegion.textContent = '練習已暫停。';
+            } else if (appState === 'paused') {
+                appState = 'running';
+                tick(); // 立即執行 tick 以繼續
+                pauseResumeButton.textContent = '⏸';
+                pauseResumeButton.setAttribute('aria-label', '暫停練習');
+                a11yLiveRegion.textContent = '練習已繼續。';
+            }
         }
         
         /**
-        * 每秒鐘執行的主要邏輯 (Tick)
-        */
+         * 每拍執行的主要邏輯 (Tick)
+         */
         function tick() {
             if (appState !== 'running') return;
-            
-            totalTimeRemaining--;
-            timeInPhase++;
-            
-            const currentPhase = PHASES[currentPhaseIndex];
 
-            // 檢查是否需要切換到下一個階段
-            if (timeInPhase >= currentPhase.duration) {
-                const nextPhaseIndex = (currentPhaseIndex + 1) % PHASES.length;
-                changePhase(nextPhaseIndex);
-            }
-            
-            // 檢查練習是否結束
+            // 如果根據上一拍的計時，時間已到，則結束。
             if (totalTimeRemaining <= 0) {
                 finish();
+                return;
             }
+
+            // 首先，使用當前的狀態值更新所有 UI 元素。
+            updateUI(); 
+
+            // 接著，為下一拍準備，更新狀態值。
+            totalTimeRemaining--;
             
-            updateUI();
+            const currentBeatMs = PHASES[currentPhaseIndex].beatMs;
+
+            if (timeInPhase > 1) {
+                timeInPhase--;
+                mainTimeout = setTimeout(tick, currentBeatMs);
+            } else {
+                // 這是此階段的最後一拍，安排下一拍切換階段。
+                mainTimeout = setTimeout(changePhase, currentBeatMs);
+            }
         }
 
         /**
-         * 切換到指定階段
-         * @param {number} phaseIndex - PHASES 陣列中的索引
+         * 切換到下一個呼吸階段
          */
-        function changePhase(phaseIndex) {
-            currentPhaseIndex = phaseIndex;
-            timeInPhase = 0;
-            
+        function changePhase() {
+            currentPhaseIndex = (currentPhaseIndex + 1) % PHASES.length;
             const newPhase = PHASES[currentPhaseIndex];
+            timeInPhase = newPhase.duration;
             
-            // 更新圓圈的 CSS class 來觸發動畫
-            breathingCircle.className = 'breathing-circle'; // 先重置
-            // 延遲一點點時間再添加新 class，確保 CSS transition 生效
-            setTimeout(() => {
-                breathingCircle.classList.add(newPhase.stateClass);
-            }, 10);
+            // 設定 CSS transition 時間，確保動畫與階段時間同步
+            const transitionSeconds = newPhase.duration * (newPhase.beatMs / 1000);
+            breathingCircle.style.transitionDuration = `${transitionSeconds}s`;
+            breathingCircle.className = `breathing-circle ${newPhase.stateClass}`;
+            
+            // 立即啟動下一個 tick
+            tick();
         }
 
         /**
-         * 練習完成時的處理
+         * 練習完成
          */
         function finish() {
-            clearInterval(mainInterval);
+            clearTimeout(mainTimeout);
             appState = 'finished';
 
-            // 顯示完成畫面，隱藏練習畫面
             exerciseView.classList.add('hidden');
-            controlsView.classList.add('hidden');
             completionView.classList.remove('hidden');
 
-            // 隨機選擇並顯示鼓勵語
             const randomIndex = Math.floor(Math.random() * ENCOURAGEMENT_MESSAGES.length);
-            encouragementMessage.textContent = ENCOURAGEMENT_MESSAGES[randomIndex];
-            a11yLiveRegion.textContent = `練習完成。${encouragementMessage.textContent}`;
+            const message = ENCOURAGEMENT_MESSAGES[randomIndex];
+            encouragementMessage.textContent = message;
+            a11yLiveRegion.textContent = `練習完成。${message}`;
         }
         
-        // --- UI 更新函式 ---
-
         /**
-         * 根據目前狀態更新所有可視元素
+         * 根據目前狀態更新所有可視 UI 元素
          */
         function updateUI() {
+            if (appState !== 'running' && appState !== 'paused') return;
+
             const currentPhase = PHASES[currentPhaseIndex];
-            const phaseTimeLeft = currentPhase.duration - timeInPhase;
-            
-            if (appState === 'idle') {
-                phaseText.textContent = '準備';
-                phaseCountdown.textContent = PHASES[0].duration;
-                totalCountdown.textContent = TOTAL_EXERCISE_TIME;
-                startPauseButton.textContent = '開始';
-                startPauseButton.setAttribute('aria-label', '開始練習');
-            } else if (appState === 'paused') {
-                phaseText.textContent = '已暫停';
-                // 顯示暫停時的倒數
-                phaseCountdown.textContent = phaseTimeLeft;
-                totalCountdown.textContent = totalTimeRemaining;
-            } else if (appState === 'running') {
-                phaseText.textContent = currentPhase.name;
-                phaseCountdown.textContent = phaseTimeLeft;
-                totalCountdown.textContent = totalTimeRemaining;
-                
-                // 更新 ARIA live region 給螢幕閱讀器
-                a11yLiveRegion.textContent = `${currentPhase.name}, ${phaseTimeLeft}。總時長剩餘 ${totalTimeRemaining} 秒。`;
+            totalCountdown.textContent = totalTimeRemaining;
+            phaseText.textContent = currentPhase.name;
+
+            // 根據 "hasCountdown" 決定是否顯示數字
+            if (currentPhase.hasCountdown) {
+                phaseCountdown.textContent = timeInPhase;
+                phaseCountdown.classList.remove('hidden');
+                phaseText.classList.remove('only-child');
+                 // 為無障礙功能朗讀
+                a11yLiveRegion.textContent = `${currentPhase.name} ${timeInPhase}`;
+            } else {
+                phaseCountdown.textContent = '';
+                phaseCountdown.classList.add('hidden');
+                phaseText.classList.add('only-child');
+                // 為無障礙功能朗讀
+                a11yLiveRegion.textContent = currentPhase.name;
             }
         }
         
         // --- 事件監聽器 ---
-        startPauseButton.addEventListener('click', handleStartPause);
+        durationSelector.addEventListener('click', handleDurationSelect);
+        startButton.addEventListener('click', startExercise);
+        pauseResumeButton.addEventListener('click', handlePauseResume);
         resetButton.addEventListener('click', reset);
-        tryAgainButton.addEventListener('click', reset);
+        tryAgainButton.addEventListener('click', startExercise);
         
         // --- 初始執行 ---
         reset(); // 頁面載入時先初始化一次
